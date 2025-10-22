@@ -1,0 +1,40 @@
+# --- Genel Uygulama Ayarları ---
+spring:
+  application:
+    name: c-payments-sipay # Uygulamamıza bir isim veriyoruz. Loglarda vs. görünür.
+
+  # Varsayılan olarak 'local' profilini aktif et.
+  # Bu dosya, docker dışında çalışırken (örn: IDE'den direkt play tuşu ile) kullanılacak ayarları içerir.
+  profiles:
+    active: local
+
+  # --- Veritabanı Ayarları (Local Profil için) ---
+  # Bu ayarlar, uygulamayı direkt IDE'den çalıştırıp, Docker'daki veritabanına bağlanmak istediğimizde kullanılır.
+  datasource:
+    url: jdbc:postgresql://localhost:5434/c_payments_db # docker-compose'da dışarı açtığımız port 5434.
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  # --- JPA & Hibernate Ayarları ---
+  jpa:
+    hibernate:
+      # Uygulama başladığında veritabanı şemasını (tabloları) entity'lere göre güncelle.
+      ddl-auto: update
+    # Çalıştırılan SQL sorgularını konsola yazdır. Hata ayıklama için çok faydalıdır.
+    show-sql: true
+    properties:
+      hibernate:
+        # Postgres'in kullandığı SQL lehçesini belirtiyoruz.
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# --- Sunucu Ayarları ---
+server:
+  port: 8083 # Uygulamanın çalışacağı port.
+
+# --- Swagger / OpenAPI Ayarları ---
+springdoc:
+  api-docs:
+    path: /api-docs # API tanımını JSON olarak sunan yol.
+  swagger-ui:
+    path: /swagger-ui.html # Swagger arayüzünün sunulacağı yol.

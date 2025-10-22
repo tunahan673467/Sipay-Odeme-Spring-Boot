@@ -1,0 +1,63 @@
+# Docker Compose dosya formatının versiyonunu belirtiyoruz.
+version: '3.8'
+
+# Çalıştırılacak servisleri (konteynerleri) burada tanımlıyoruz.
+services:
+
+  # 1. Servis: PostgreSQL Veritabanı
+  db:
+    image: postgres:16 # Docker Hub'dan hazır Postgres 16 imajını kullan.
+    container_name: c-payments-db # Konteynere kolayca tanıyabileceğimiz bir isim verelim.
+    restart: always # Eğer konteyner bir hata nedeniyle kapanırsa, Docker onu otomatik olarak yeniden başlatsın.
+    ports:
+      # Bilgisayarımızın 5434 portuna gelen istekleri, konteynerin 5432 portuna yönlendir.
+      # Böylece veritabanına dışarıdan 5434 portu ile erişebiliriz.
+      - "5434:5432"
+    environment:
+      # Veritabanı oluşturulurken kullanılacak başlangıç ayarları.
+      # BURADAKİ BİLGİLERİ GÜVENLİ BİR YERDE SAKLAMALISIN. ŞİMDİLİK ÖRNEK KULLANIYORUZ.
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: c_payments_db
+    volumes:
+      # Konteyner silinse bile veritabanı verilerinin kaybolmaması için bilgisayarımızda bir alana bağlıyoruz.
+      # 'postgres-data' adında bir volume oluştur ve konteynerin '/var/lib/postgresql/data' klasörünü buraya bağla.
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Bu konteynerin "sağlıklı" ve "çalışmaya hazır" olup olmadığını kontrol et.
+      test: ["CMD-SHELL", "pg_isready -U user -d c_payments_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Servis: Bizim Spring Boot Uygulamamız
+  app:
+    container_name: c-payments-app # Konteynere isim verelim.
+    # Bu servisin imajını, aynı dizindeki 'Dockerfile' dosyasını kullanarak kendin oluştur (build et).
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure # Sadece hata durumunda yeniden başlat.
+    ports:
+      # Bilgisayarımızın 8083 portuna gelen istekleri, konteynerin 8083 portuna yönlendir.
+      - "8083:8083"
+    environment:
+      # Uygulamamızın içinde kullanacağı ortam değişkenleri.
+      # 'docker' profilini aktif et. Bu sayede application-docker.yml dosyasını okuyacak.
+      SPRING_PROFILES_ACTIVE: docker
+      # Veritabanı bağlantı bilgilerini uygulamamıza buradan veriyoruz.
+      # Dikkat: Host olarak 'localhost' DEĞİL, yukarıda tanımladığımız servisin adını ('db') yazıyoruz.
+      # Docker Compose, servisler arası iletişim için bu ismi kullanır.
+      DB_HOST: db
+      DB_NAME: c_payments_db
+      DB_USER: user
+      DB_PASSWORD: password
+    depends_on:
+      # Bu 'app' servisini BAŞLATMADAN ÖNCE, 'db' servisinin 'sağlıklı' (healthy) olmasını BEKLE.
+      # Bu, uygulamamızın veritabanı hazır olmadan başlamasını engeller. Çok önemlidir.
+      db:
+        condition: service_healthy
+
+# Veri saklamak için tanımladığımız kalıcı alan (volume).
+volumes:
+  postgres-data:
