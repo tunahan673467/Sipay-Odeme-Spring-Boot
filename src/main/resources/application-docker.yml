@@ -1,17 +1,12 @@
-# --- Sadece 'docker' profili aktif olduğunda geçerli olacak ayarlar ---
-
 spring:
-  # --- Veritabanı Ayarları (Docker Profili için) ---
   datasource:
-    # Docker içindeki uygulamamız, veritabanına 'localhost' yerine servis adıyla ('db') erişir.
-    # Port olarak da konteynerin kendi iç portu olan 5432'yi kullanır.
     url: jdbc:postgresql://db:5432/c_payments_db
-
+    username: ${DB_USER:user}
+    password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
-      # Veritabanı şemasını oluşturma/güncelleme stratejisi.
       ddl-auto: update
 
-# --- Sunucu Ayarları ---
+
 server:
-  port: 8083 # Konteyner içindeki uygulamanın çalışacağı port.
+  port: 8083
